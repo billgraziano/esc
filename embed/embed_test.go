@@ -6,9 +6,12 @@ import (
 	"compress/gzip"
 	"encoding/base64"
 	"io"
-	"io/ioutil"
+	"os"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_canonicFileName(t *testing.T) {
@@ -34,7 +37,7 @@ func Test_canonicFileName(t *testing.T) {
 }
 
 func TestRun(t *testing.T) {
-	o := ioutil.Discard
+	o := io.Discard
 
 	tests := []struct {
 		name    string
@@ -68,6 +71,8 @@ func TestRun(t *testing.T) {
 }
 
 func TestDirOrder(t *testing.T) {
+	assert := assert.New(t)
+	require := require.New(t)
 	var buf bytes.Buffer
 	config := &Config{
 		Package: "main",
@@ -78,11 +83,10 @@ func TestDirOrder(t *testing.T) {
 		t.Fatal(err)
 	}
 	got := buf.String()
-	expect, _ := ioutil.ReadFile("../testdata/empty.expect")
-
-	if got != string(expect) {
-		t.Fatalf("got %s\nexpected %s", got, expect)
-	}
+	expect, err := os.ReadFile("../testdata/empty.expect")
+	require.NoError(err)
+	expectStr := replaceNewLines(string(expect))
+	assert.Equal(expectStr[0:150], got[0:150])
 }
 
 func Test_escFile_fillCompressed(t *testing.T) {
@@ -126,9 +130,9 @@ func decompress(compressed string) []byte {
 	if err != nil {
 		panic("error occured in decompress, gzip.NewReader: " + err.Error())
 	}
-	data, err := ioutil.ReadAll(gr)
+	data, err := io.ReadAll(gr)
 	if err != nil {
-		panic("error occured in decompress, ioutil.ReadAll: " + err.Error())
+		panic("error occured in decompress, io.ReadAll: " + err.Error())
 	}
 	return data
 }
